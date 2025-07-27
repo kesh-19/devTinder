@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const connectDB = require("./config/database");
+const bcrypt = require("bcrypt"); // Import bcrypt
 
 // Import models
 const UserModel = require("./models/user");
@@ -15,7 +16,16 @@ const runServer = () => {
 app.use(express.json()); // Middleware to parse JSON bodies
 
 app.post("/signup", async (req, res) => {
-  const user = new UserModel(req.body);
+  const { firstName, lastName, emailId, password } = req.body;
+
+  const passwordHash = await bcrypt.hash(password, 10); // Hash the password before saving
+
+  const user = new UserModel({
+    firstName,
+    lastName,
+    emailId,
+    password: passwordHash, // Assuming password is already hashed
+  });
 
   try {
     await user.save();
