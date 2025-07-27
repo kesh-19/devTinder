@@ -22,7 +22,7 @@ app.post("/signup", async (req, res) => {
     res.send("User created successfully");
   } catch (error) {
     console.error("Error creating user:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send("Internal Server Error:" + error.message);
   }
 });
 
@@ -32,7 +32,7 @@ app.get("/users", async (req, res) => {
     res.send(users);
   } catch (error) {
     console.error("Error fetching users:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send("Internal Server Error" + error.message);
   }
 });
 
@@ -42,7 +42,7 @@ app.get("/feed", async (req, res) => {
     res.send(users);
   } catch (error) {
     console.error("Error fetching feed:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send("Internal Server Error" + error.message);
   }
 });
 
@@ -51,11 +51,13 @@ app.patch("/user", async (req, res) => {
   const { userId } = update;
 
   try {
-    await UserModel.findByIdAndUpdate(userId, update);
+    await UserModel.findByIdAndUpdate(userId, update, {
+      runValidators: true, // Validate the update against the schema
+    });
     res.send("User updated successfully");
   } catch (error) {
     console.error("Error updating user:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send("Internal Server Error" + error.message);
   }
 });
 
@@ -64,11 +66,13 @@ app.patch("/userByEmail", async (req, res) => {
   const { emailId } = update;
 
   try {
-    await UserModel.findOneAndUpdate({ emailId }, update);
+    await UserModel.findOneAndUpdate({ emailId }, update, {
+      runValidators: true, // Validate the update against the schema
+    });
     res.send("User updated successfully by email");
   } catch (error) {
     console.error("Error updating user by email:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send("Internal Server Error" + error.message);
   }
 });
 
@@ -80,7 +84,7 @@ app.delete("/user", async (req, res) => {
     res.send("User deleted successfully");
   } catch (error) {
     console.error("Error deleting user:", error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).send("Internal Server Error" + error.message);
   }
 });
 
