@@ -22,7 +22,7 @@ app.post("/signup", async (req, res) => {
     res.send("User created successfully");
   } catch (error) {
     console.error("Error creating user:", error);
-    res.status(500).send("Internal Server Error:" + error.message);
+    res.status(500).send("Internal Server Error: " + error.message);
   }
 });
 
@@ -50,14 +50,24 @@ app.patch("/user", async (req, res) => {
   const update = req.body;
   const { userId } = update;
 
+  const nonUpdatableFields = new Set([
+    "_id",
+    "createdAt",
+    "updatedAt",
+    "emailId",
+  ]);
+
   try {
+    if (Object.keys(update).some((key) => nonUpdatableFields.has(key))) {
+      throw new Error("Cannot update non-updatable fields");
+    }
     await UserModel.findByIdAndUpdate(userId, update, {
       runValidators: true, // Validate the update against the schema
     });
     res.send("User updated successfully");
   } catch (error) {
     console.error("Error updating user:", error);
-    res.status(500).send("Internal Server Error" + error.message);
+    res.status(500).send("Internal Server Error: " + error.message);
   }
 });
 

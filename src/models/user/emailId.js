@@ -1,12 +1,15 @@
+const validator = require("validator");
+
 module.exports = {
   type: String,
   required: true,
   unique: true,
   lowercase: true,
+  immutable: true,
   trim: true,
+  // validate: (value) => validator.isEmail(value),
   validate: {
-    validator: function (v) {
-      return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
-    },
+    validator: (value) => validator.isEmail(value),
+    message: "Invalid email format.",
   },
 };
