@@ -1,10 +1,17 @@
 const express = require("express");
 const app = express();
 const connectDB = require("./config/database");
-const bcrypt = require("bcrypt"); // Import bcrypt
+const bcrypt = require("bcrypt");
+const validateEmailAndPassword = require("./utils/validateEmailAndPassword");
+const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = require("./utils/constants");
+
+// Import checkCookie middleware
+const checkCookie = require("./middleware/checkCookie");
 
 // Import models
 const UserModel = require("./models/user");
+const cookieParser = require("cookie-parser");
 
 // Initialize Express app
 const runServer = () => {
@@ -14,6 +21,9 @@ const runServer = () => {
 };
 
 app.use(express.json()); // Middleware to parse JSON bodies
+app.use(cookieParser());
+
+app.use("/", checkCookie); // Apply checkCookie middleware to all routes
 
 app.post("/signup", async (req, res) => {
   const { firstName, lastName, emailId, password } = req.body;
@@ -36,22 +46,49 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-app.get("/users", async (req, res) => {
+app.post("/login", async (req, res) => {
+  const { emailId, password } = req.body;
+  const user = await UserModel.findOne({ emailId });
   try {
-    const users = await UserModel.find({ age: 23 });
-    res.send(users);
+    validateEmailAndPassword(emailId, password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).send("Invalid email or password");
+    } else {
+      const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
+        expiresIn: 60 * 60 * 2,
+      }); // Token expires in 2 hours
+
+      res.cookie("token", token);
+      res.send("Login Successful");
+    }
   } catch (error) {
-    console.error("Error fetching users:", error);
-    res.status(500).send("Internal Server Error" + error.message);
+    console.error("Error logging in:", error);
+    res.status(500).send("Internal Server Error: " + error.message);
   }
 });
 
-app.get("/feed", async (req, res) => {
+app.get("/profile", async (req, res) => {
+  try {
+    const userId = req.user._id; // Use the user from the request object
+    const user = await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    res.send(user);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).send("Internal Server Error: " + error.message);
+  }
+});
+
+app.get("/users", async (req, res) => {
   try {
     const users = await UserModel.find();
     res.send(users);
   } catch (error) {
-    console.error("Error fetching feed:", error);
+    console.error("Error fetching users:", error);
     res.status(500).send("Internal Server Error" + error.message);
   }
 });
@@ -98,10 +135,15 @@ app.patch("/userByEmail", async (req, res) => {
 
 app.delete("/user", async (req, res) => {
   const { userId } = req.body;
+  console.log(userId);
 
   try {
-    await UserModel.findByIdAndDelete(userId);
-    res.send("User deleted successfully");
+    const result = await UserModel.findByIdAndDelete(userId);
+    if (result === null) {
+      return res.status(404).send("User not found");
+    } else {
+      res.send("User deleted successfully");
+    }
   } catch (error) {
     console.error("Error deleting user:", error);
     res.status(500).send("Internal Server Error" + error.message);
