@@ -3,8 +3,6 @@ const app = express();
 const connectDB = require("./config/database");
 const bcrypt = require("bcrypt");
 const validateEmailAndPassword = require("./utils/validateEmailAndPassword");
-const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("./utils/constants");
 
 // Import checkCookie middleware
 const checkCookie = require("./middleware/checkCookie");
@@ -56,9 +54,7 @@ app.post("/login", async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).send("Invalid email or password");
     } else {
-      const token = jwt.sign({ _id: user._id }, JWT_SECRET, {
-        expiresIn: 60 * 60 * 2,
-      }); // Token expires in 2 hours
+      const token = user.getJwtToken(); // Get JWT token from user model
 
       res.cookie("token", token);
       res.send("Login Successful");
